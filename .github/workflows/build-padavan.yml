@@ -1,0 +1,116 @@
+name: Build Padavan for Newifi D2
+
+on:
+  workflow_dispatch:
+    inputs:
+      manual:
+        description: 'Manual Trigger'
+        required: false
+        default: 'true'
+  push:
+    branches:
+      - main
+    paths:
+      - 'configs/**'
+      - 'custom/**'
+      - 'patches/**'
+      - '.github/workflows/build-padavan.yml'
+
+permissions:
+  contents: write
+
+env:
+  TARGET_NAME: NEWIFI3
+  SOURCE_REPO: https://github.com/chongshengB/rt-n56u.git
+  SOURCE_BRANCH: master
+  UPLOAD_DIR: /opt/rt-n56u/trunk/images
+
+jobs:
+  build:
+    name: Build Padavan Firmware
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Initialization Environment
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y unzip libtool-bin curl cmake gperf gawk flex bison nano xxd \
+            fakeroot kmod cpio git python3-docutils gettext automake autopoint texinfo \
+            build-essential help2man pkg-config zlib1g-dev libgmp3-dev libmpc-dev \
+            libmpfr-dev libncurses5-dev libltdl-dev wget
+          sudo timedatectl set-timezone "Asia/Shanghai"
+
+      - name: Clone Padavan Source Code
+        run: |
+          git clone --depth=1 -b $SOURCE_BRANCH $SOURCE_REPO /opt/rt-n56u
+
+      - name: Build MIPS Cross-Compilation Toolchain
+        run: |
+          cd /opt/rt-n56u/toolchain-mipsel
+          sh -c "./clean_sources && ./build_toolchain_3.4.x" || sh -c "./clean_toolchain && ./build_toolchain"
+
+      - name: Apply Custom Dual-WAN & Features Injection
+        run: |
+          chmod +x patches/inject_dualwan.sh
+          ./patches/inject_dualwan.sh
+
+      - name: Compile Padavan Firmware
+        run: |
+          cd /opt/rt-n56u/trunk
+          fakeroot ./build_firmware_modify $TARGET_NAME
+          echo "BUILD_DATE=$(date +'%Y.%m.%d-%H%M')" >> $GITHUB_ENV
+
+      - name: Prepare Artifacts
+        id: organize
+        run: |
+          cd $UPLOAD_DIR
+          ls -lh
+          FIRMWARE_FILE=$(ls *.trx | head -n 1)
+          echo "FIRMWARE_FILE=$FIRMWARE_FILE" >> $GITHUB_ENV
+          echo "FILE_PATH=$UPLOAD_DIR/$FIRMWARE_FILE" >> $GITHUB_ENV
+          md5sum $FIRMWARE_FILE > md5sum.txt
+          sha256sum $FIRMWARE_FILE > sha256sum.txt
+          echo "status=success" >> $GITHUB_OUTPUT
+
+      - name: Upload Firmware Directory Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Padavan_NewifiD2_${{ env.BUILD_DATE }}
+          path: |
+            ${{ env.UPLOAD_DIR }}/*.trx
+            ${{ env.UPLOAD_DIR }}/*.txt
+
+      - name: Create Release and Upload Firmware
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: Padavan-${{ env.BUILD_DATE }}
+          name: Newifi D2 Padavan 极致性能版 [${{ env.BUILD_DATE }}]
+          body: |
+            ## 🚀 Newifi D2 (新路由3) Padavan 极致性能定制版发布
+
+            ### ✨ 核心亮点：
+            - **MTK 官方闭源原厂无线驱动**：彻底告别断流，2.4G (300M) + 5G (867M) 全功率满血输出，抗干扰性能拔群。
+            - **HWNAT 芯片级硬件加速**：千兆 NAT 跑满 CPU 占用率常年 < 3%，极致低温流畅。
+            - **独家双WAN硬件穿透 & 拖拽拓扑**：
+              - 内置可视化 Newifi D2 物理面板交互拓扑（支持拖拽线缆自由定义 WAN2 端口）。
+              - 内核 `fib_multipath_hash_policy=1` L4 四元组哈希 ECMP 1+1 带宽聚合。
+            - **科学上网矩阵**：Shadowsocks Plus / Xray-core / Trojan / Clash / SmartDNS。
+            - **内网穿透与远程管理**：ZeroTier、Frp (`frpc`)、DDNS-Go (阿里云/腾讯云/Cloudflare)、DDNSTO。
+            - **实用系统工具**：AdGuardHome、Adbyby Plus+、KMS (`vlmcsd`) 局域网激活、ttyd 网页终端。
+
+            ### 📦 固件信息与校验：
+            - 固件格式：`*.trx`（支持 Breed 直接刷入，或在 Padavan 现有后台升级）
+            - 适用机型：Newifi D2 (新路由3 - MediaTek MT7621AT, 512M RAM, 32M Flash)
+            - 默认管理地址：`192.168.123.1` (或 `192.168.1.1`)
+            - 默认用户名/密码：`admin` / `admin`
+            - 默认 Wi-Fi 密码：`1234567890`
+          files: |
+            ${{ env.UPLOAD_DIR }}/*.trx
+            ${{ env.UPLOAD_DIR }}/md5sum.txt
+            ${{ env.UPLOAD_DIR }}/sha256sum.txt
