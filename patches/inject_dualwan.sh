@@ -18,12 +18,8 @@ curl -sSL --retry 3 "https://dl.google.com/go/go1.15.2.linux-amd64.tar.gz" -o "$
 tar -zxf "$WORK_DIR/trunk/tools/go/go1.15.2.linux-amd64.tar.gz" -C "$WORK_DIR/trunk/tools/go"
 ls -la "$WORK_DIR/trunk/tools/go"
 
-# Fix dead bintray mirror for htop
-echo "==> [Padavan Fixes] Fixing htop bintray mirror..."
-mkdir -p "$WORK_DIR/trunk/user/htop"
-curl -sSL --retry 3 "https://github.com/htop-dev/htop/releases/download/3.0.2/htop-3.0.2.tar.gz" -o "$WORK_DIR/trunk/user/htop/htop-3.0.2.tar.gz"
-find "$WORK_DIR" -type f \( -name "Makefile" -o -name "*.mk" \) -exec sed -i 's|https://bintray.com/htop/source/download_file?file_path=htop-3.0.2.tar.gz|https://github.com/htop-dev/htop/releases/download/3.0.2/htop-3.0.2.tar.gz|g' {} + 2>/dev/null || true
-find "$WORK_DIR" -type f \( -name "Makefile" -o -name "*.mk" \) -exec sed -i 's|bintray\.com|github.com|g' {} + 2>/dev/null || true
+# Disable htop completely to avoid dead bintray mirror and save flash space
+find "$WORK_DIR/trunk/configs" -type f -name "*.config" -exec sed -i 's/CONFIG_FIRMWARE_INCLUDE_HTOP=y/CONFIG_FIRMWARE_INCLUDE_HTOP=n/g' {} + 2>/dev/null || true
 
 # 1. Dynamically locate Web UI directory where Advanced_WAN_Content.asp is
 WAN_ASP=$(find $WORK_DIR/trunk/user -name "Advanced_WAN_Content.asp" | head -n 1)
