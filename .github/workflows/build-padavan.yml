@@ -37,8 +37,10 @@ jobs:
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
-          sudo apt-get update
-          sudo apt-get install -y unzip libtool-bin curl cmake gperf gawk flex bison nano xxd \
+          sudo sed -i 's/azure\.archive\.ubuntu\.com/archive\.ubuntu\.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null || true
+          sudo sed -i 's/azure\.archive\.ubuntu\.com/archive\.ubuntu\.com/g' /etc/apt/apt-mirrors.txt 2>/dev/null || true
+          sudo apt-get update --fix-missing
+          sudo apt-get install -y --fix-missing unzip libtool-bin curl cmake gperf gawk flex bison nano xxd \
             fakeroot kmod cpio git python3-docutils gettext automake autopoint texinfo \
             build-essential help2man pkg-config zlib1g-dev libgmp-dev libmpc-dev \
             libmpfr-dev libncurses-dev libltdl-dev wget
