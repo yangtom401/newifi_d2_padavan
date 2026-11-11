@@ -28,7 +28,7 @@ env:
 jobs:
   build:
     name: Build Padavan Firmware
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -40,8 +40,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y unzip libtool-bin curl cmake gperf gawk flex bison nano xxd \
             fakeroot kmod cpio git python3-docutils gettext automake autopoint texinfo \
-            build-essential help2man pkg-config zlib1g-dev libgmp3-dev libmpc-dev \
-            libmpfr-dev libncurses5-dev libltdl-dev wget
+            build-essential help2man pkg-config zlib1g-dev libgmp-dev libmpc-dev \
+            libmpfr-dev libncurses-dev libltdl-dev wget
           sudo timedatectl set-timezone "Asia/Shanghai"
 
       - name: Clone Padavan Source Code
