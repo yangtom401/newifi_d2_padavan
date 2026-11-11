@@ -5,6 +5,19 @@ set -e
 WORK_DIR="/opt/rt-n56u"
 echo "==> [Padavan Customization] Injecting Dual-WAN UI and scripts into $WORK_DIR..."
 
+# 0. Fix dead mirrors and pre-fetch Go toolchain
+echo "==> [Padavan Fixes] Pre-downloading and fixing Go toolchain mirror..."
+mkdir -p "$WORK_DIR/trunk/tools/go"
+# Replace gomirrors.org with dl.google.com in all Makefiles and scripts
+find "$WORK_DIR" -type f \( -name "Makefile" -o -name "*.mk" -o -name "*.sh" \) -exec sed -i 's|gomirrors\.org/dl/go|dl.google.com/go|g' {} + 2>/dev/null || true
+find "$WORK_DIR" -type f \( -name "Makefile" -o -name "*.mk" -o -name "*.sh" \) -exec sed -i 's|https://golang.google.cn/dl/|https://dl.google.com/go/|g' {} + 2>/dev/null || true
+
+# Pre-fetch Go 1.15.2 directly from official dl.google.com or go.dev
+curl -sSL --retry 3 "https://dl.google.com/go/go1.15.2.linux-amd64.tar.gz" -o "$WORK_DIR/trunk/tools/go/go1.15.2.linux-amd64.tar.gz" || curl -sSL --retry 3 "https://go.dev/dl/go1.15.2.linux-amd64.tar.gz" -o "$WORK_DIR/trunk/tools/go/go1.15.2.linux-amd64.tar.gz"
+# Extract ahead of time so tools/Makefile won't need to do it
+tar -zxf "$WORK_DIR/trunk/tools/go/go1.15.2.linux-amd64.tar.gz" -C "$WORK_DIR/trunk/tools/go"
+ls -la "$WORK_DIR/trunk/tools/go"
+
 # 1. Dynamically locate Web UI directory where Advanced_WAN_Content.asp is
 WAN_ASP=$(find $WORK_DIR/trunk/user -name "Advanced_WAN_Content.asp" | head -n 1)
 if [ -n "$WAN_ASP" ]; then
