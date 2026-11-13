@@ -1,0 +1,84 @@
+name: Repack Hiboy Padavan with Dual-WAN
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'scripts/**'
+      - 'custom/**'
+      - '.github/workflows/repack-hiboy.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repack:
+    name: Repack Hiboy Official Padavan
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y squashfs-tools python3 curl
+
+      - name: Download Official Hiboy Padavan Firmware
+        run: |
+          echo "==> Downloading official Hiboy Newifi D2 firmware from opt.cn2qq.com..."
+          curl -sSL --retry 3 "https://opt.cn2qq.com/padavan/RT-N56UB1-newifi3D2-512M_3.4.3.9-099.trx" -o RT-N56UB1-newifi3D2-512M_3.4.3.9-099.trx
+          ls -lh RT-N56UB1-newifi3D2-512M_3.4.3.9-099.trx
+
+      - name: Repack with Dual-WAN & PassWall / Hiboy Framework
+        run: |
+          chmod +x scripts/repack_hiboy.py
+          python3 scripts/repack_hiboy.py RT-N56UB1-newifi3D2-512M_3.4.3.9-099.trx RT-N56UB1-newifi3D2-512M-DualWAN.trx
+          ls -lh RT-N56UB1-newifi3D2-512M-DualWAN.trx
+          md5sum RT-N56UB1-newifi3D2-512M-DualWAN.trx > md5sum.txt
+          sha256sum RT-N56UB1-newifi3D2-512M-DualWAN.trx > sha256sum.txt
+          echo "BUILD_DATE=$(date +'%Y.%m.%d-%H%M')" >> $GITHUB_ENV
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Hiboy_Padavan_DualWAN_${{ env.BUILD_DATE }}
+          path: |
+            RT-N56UB1-newifi3D2-512M-DualWAN.trx
+            md5sum.txt
+            sha256sum.txt
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: Hiboy-DualWAN-${{ env.BUILD_DATE }}
+          name: Newifi D2 官方老毛子(Hiboy)框架 + 双WAN拓扑聚合满血版 [${{ env.BUILD_DATE }}]
+          body: |
+            ## 🚀 Newifi D2 官方老毛子 (Hiboy opt.cn2qq.com) 完整框架 + 双WAN拖拽拓扑满血定制版
+            
+            ### ✨ 核心亮点：
+            - **100% 官方 Hiboy (https://opt.cn2qq.com/) 完整生态**：
+              - 完整保留 Hiboy 全部 50+ 扩展插件架构（ShadowSocks/PassWall/Clash/V2Ray/V2RayA/Trojan/Hysteria/Tailscale）。
+              - 广告拦截：AdGuardHome / Koolproxy / ADM / Adbyby Plus+。
+              - 内网穿透：Frp / NPS / ZeroTier / DDNS-Go / DDNSTO / Aliddns / Cloudflare。
+              - 系统工具：ttyd 网页终端、KMS 激活服务、Alist、Web 环境搭建。
+              - 在线热更新：与 Hiboy 官方 opt-script 软件源无缝同步更新。
+            - **MTK 官方原厂闭源驱动 + HWNAT 硬件加速**：5G (867M) + 2.4G (300M) 满血功率，硬件 NAT 跑满千兆 CPU 负载常年 < 3%。
+            - **独家双WAN硬件穿透 & 可视化拖拽拓扑**：
+              - 物理面板交互拓扑（支持拖拽连线定义物理 WAN2 端口）。
+              - 内核 `fib_multipath_hash_policy=1` L4 四元组哈希 ECMP 1+1 带宽聚合。
+            
+            ### 📦 固件信息与校验：
+            - 固件格式：`*.trx`（支持直接后台升级或 Breed 刷入）
+            - 适用机型：Newifi D2 (MediaTek MT7621AT, 512M RAM, 32M Flash)
+            - 默认管理地址：`192.168.123.1` (或由原配置保留)
+            - 默认用户名/密码：`admin` / `admin`
+            - 默认 Wi-Fi：`PDCN` / `1234567890`
+          files: |
+            RT-N56UB1-newifi3D2-512M-DualWAN.trx
+            md5sum.txt
+            sha256sum.txt
