@@ -45,7 +45,7 @@ jobs:
           sudo apt-get install -y --fix-missing -o Acquire::Retries=3 unzip libtool-bin curl cmake gperf gawk flex bison nano xxd \
             fakeroot kmod cpio git python3-docutils gettext automake autopoint texinfo \
             build-essential help2man pkg-config zlib1g-dev libgmp-dev libmpc-dev \
-            libmpfr-dev libncurses-dev libltdl-dev wget
+            libmpfr-dev libncurses-dev libltdl-dev wget libssl-dev libc-dev-bin
           sudo timedatectl set-timezone "Asia/Shanghai"
 
       - name: Clone Padavan Source Code
