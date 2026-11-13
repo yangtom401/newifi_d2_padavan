@@ -140,6 +140,7 @@ def main():
     with open(output_file, "wb") as f:
         f.write(final_header + new_payload)
 
+    os.chmod(output_file, 0o666)
     final_size = os.path.getsize(output_file)
     print(f"[+] Successfully generated firmware: {output_file} ({final_size} bytes)")
 

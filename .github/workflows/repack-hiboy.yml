@@ -35,7 +35,7 @@ jobs:
       - name: Repack with Dual-WAN & PassWall / Hiboy Framework
         run: |
           chmod +x scripts/repack_hiboy.py
-          python3 scripts/repack_hiboy.py RT-N56UB1-newifi3D2-512M_3.4.3.9-099.trx RT-N56UB1-newifi3D2-512M-DualWAN.trx
+          sudo python3 scripts/repack_hiboy.py RT-N56UB1-newifi3D2-512M_3.4.3.9-099.trx RT-N56UB1-newifi3D2-512M-DualWAN.trx
           ls -lh RT-N56UB1-newifi3D2-512M-DualWAN.trx
           md5sum RT-N56UB1-newifi3D2-512M-DualWAN.trx > md5sum.txt
           sha256sum RT-N56UB1-newifi3D2-512M-DualWAN.trx > sha256sum.txt
